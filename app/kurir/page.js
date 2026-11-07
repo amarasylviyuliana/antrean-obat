@@ -4,38 +4,62 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/format';
 import { deliveryEta, rupiah } from '@/lib/geo';
 
-function TaskCard({ order, busyCode, onRelease, onComplete, canComplete }) {
+function TaskCard({ order, busyCode, onRelease, onComplete, canComplete, statusLabel }) {
+  const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.lat},${order.lng}`)}`;
+
   return (
-    <article className="surface-card space-y-3 p-4 sm:p-5">
-      <div className="flex flex-wrap items-start justify-between gap-2">
-        <div>
-          <p className="font-bold text-teal-700">{order.order_code}</p>
-          <p className="text-sm text-slate-500">Antrean {order.queue_number}</p>
+    <article className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:p-5">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div className="flex flex-wrap items-center gap-2">
+          <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-bold text-teal-800">#{order.order_code}</span>
+          <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-700">Antrean {order.queue_number}</span>
+          <span className="rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs font-semibold text-emerald-700">✓ Dibayar online</span>
         </div>
+        <span className="rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-800">{statusLabel}</span>
+      </div>
+
+      <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-[1fr_1.4fr_auto] sm:items-center">
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pasien / penerima</p>
+          <p className="mt-1 truncate font-bold text-slate-900">{order.patient_name}</p>
+          <a className="mt-1 inline-flex text-sm text-teal-700 hover:underline" href={`tel:${order.phone}`}>☎ {order.phone}</a>
+        </div>
+        <div className="min-w-0">
+          <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Alamat pengantaran</p>
+          <p className="mt-1 text-sm text-slate-700">
+            {order.address_detail}
+            <br />
+            {order.kelurahan ? `Kel. ${order.kelurahan}, ` : ''}
+            Kec. {order.kecamatan}, {order.kota || 'Kota Bandung'}
+          </p>
+        </div>
+        <div className="rounded-xl bg-teal-50 px-4 py-3 text-left sm:min-w-32 sm:text-right">
+          <p className="text-xs text-slate-600">Jarak: {order.distance_km} km</p>
+          <p className="font-extrabold text-teal-900">{rupiah(order.shipping_fee)}</p>
+          <p className="text-[11px] font-medium text-teal-700">Ongkir kurir</p>
+        </div>
+      </div>
+
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-3">
         <p className="text-xs text-slate-500">Dibuat {formatDateTime(order.created_at)}</p>
-      </div>
-
-      <div className="grid gap-1 text-sm sm:grid-cols-2">
-        <p><span className="text-slate-500">Penerima:</span> <b>{order.patient_name}</b></p>
-        <p><span className="text-slate-500">Telepon:</span> <a className="text-teal-700 underline" href={`tel:${order.phone}`}>{order.phone}</a></p>
-        <p>
-          <span className="text-slate-500">Tujuan:</span>{' '}
-          {order.kelurahan ? `Kel. ${order.kelurahan}, ` : ''}
-          Kec. {order.kecamatan}, {order.kota || 'Kota Bandung'}
-        </p>
-        <p><span className="text-slate-500">Ongkir:</span> {rupiah(order.shipping_fee)}</p>
-      </div>
-
-      <p className="text-sm">{order.address_detail}</p>
-      <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2">
         <a
-          className="btn-primary inline-flex"
-          href={`https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.lat},${order.lng}`)}`}
+          className="btn-ghost"
+          href={mapUrl}
           target="_blank"
           rel="noreferrer"
         >
-          Buka rute di peta
+          Lihat lokasi
         </a>
+        {onClaim && (
+          <button
+            className="btn-primary"
+            disabled={busyCode === order.order_code}
+            onClick={() => onClaim(order.order_code)}
+          >
+            {busyCode === order.order_code ? 'Memproses...' : '🛵 Klaim tugas ini'}
+          </button>
+        )}
         {onRelease && (
           <button
             className="btn-ghost"
@@ -54,6 +78,7 @@ function TaskCard({ order, busyCode, onRelease, onComplete, canComplete }) {
             {busyCode === order.order_code ? 'Memproses...' : 'Selesaikan pengiriman'}
           </button>
         )}
+        </div>
       </div>
       {onComplete && !canComplete && (
         <p className="text-xs text-slate-500">Tombol selesai aktif setelah estimasi waktu pengantaran tercapai.</p>
@@ -163,9 +188,9 @@ export default function Kurir() {
       <div className="surface-card relative overflow-hidden p-5 sm:p-6">
         <div className="absolute -right-7 -top-10 size-32 rounded-full bg-teal-50" aria-hidden />
         <div className="relative">
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Panel pengantaran</p>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Panel pengantaran rumah</p>
           <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Tugas Kurir</h1>
-          <p className="mt-1 text-sm text-slate-500">Klaim pesanan yang akan Anda antar. Daftar diperbarui otomatis.</p>
+          <p className="mt-1 text-sm text-slate-500">Daftar ini hanya menampilkan pesanan antar ke rumah. Tugas diperbarui otomatis.</p>
         </div>
       </div>
 
@@ -232,31 +257,19 @@ export default function Kurir() {
                     onRelease={(code) => updateClaim(code, 'DELETE')}
                     onComplete={completeOrder}
                     canComplete={eta !== null && now >= eta}
+                    statusLabel="Sedang diantar"
                   />
                 );
               }
-              if (tab === 'completed') return <TaskCard key={order.order_code} order={order} />;
+              if (tab === 'completed') return <TaskCard key={order.order_code} order={order} statusLabel="Selesai diantar" />;
               return (
-                <article key={order.order_code} className="surface-card space-y-3 p-4 sm:p-5">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <p className="font-bold text-teal-700">{order.order_code}</p>
-                      <p className="text-sm text-slate-500">Antrean {order.queue_number}</p>
-                    </div>
-                    <p className="text-xs text-slate-500">Dibuat {formatDateTime(order.created_at)}</p>
-                  </div>
-                  <p className="text-sm">
-                    {order.kelurahan ? `Kel. ${order.kelurahan}, ` : ''}
-                    Kec. {order.kecamatan}, {order.kota || 'Kota Bandung'} · {order.distance_km} km
-                  </p>
-                  <button
-                    className="btn-primary"
-                    disabled={busyCode === order.order_code}
-                    onClick={() => updateClaim(order.order_code, 'POST')}
-                  >
-                    {busyCode === order.order_code ? 'Memproses...' : 'Klaim tugas'}
-                  </button>
-                </article>
+                <TaskCard
+                  key={order.order_code}
+                  order={order}
+                  busyCode={busyCode}
+                  onClaim={(code) => updateClaim(code, 'POST')}
+                  statusLabel="Siap diantar"
+                />
               );
             })}
           </div>
