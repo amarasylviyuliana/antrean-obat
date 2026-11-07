@@ -106,7 +106,8 @@ export async function POST(req) {
       if (!order || order.payment_status === 'PAID' || order.status !== 'MENUNGGU_VERIFIKASI') continue;
 
       const result = await query(
-        `UPDATE prescriptions SET status = 'DIBATALKAN', payment_status = 'EXPIRED',
+        `UPDATE prescriptions SET status = 'DIBATALKAN', cancellation_reason = 'Pembayaran ongkir tidak diterima sebelum batas waktu.',
+           payment_status = 'EXPIRED',
            auto_cancelled_at = NOW()
          WHERE id = ? AND method = 'DELIVERY' AND status = 'MENUNGGU_VERIFIKASI'
            AND payment_status <> 'PAID' AND payment_expires_at <= NOW()
@@ -128,7 +129,7 @@ export async function POST(req) {
         order,
         'payment_cancel_email_sent_at',
         `Pesanan ${order.order_code} dibatalkan karena belum dibayar`,
-        `Pesanan ini dibatalkan otomatis karena pembayaran tidak diterima dalam batas waktu ${PAYMENT_WINDOW_MINUTES} menit. Tautan pembayaran untuk pesanan ini sudah tidak berlaku. Jika masih memerlukan obat, silakan buat pesanan baru atau hubungi apotek klinik.`,
+        `Pesanan ini dibatalkan otomatis karena pembayaran tidak diterima dalam batas waktu ${PAYMENT_WINDOW_MINUTES} menit. Tautan pembayaran untuk pesanan ini sudah tidak berlaku. Jika masih memerlukan obat, silakan buat pesanan baru. Untuk informasi, hubungi apotek melalui WhatsApp 0895 4002 000203 dan sebutkan kode pesanan.`,
         { path: '/', linkLabel: 'Buat pesanan baru' }
       );
       if (sent) cancellationEmailsSent++;

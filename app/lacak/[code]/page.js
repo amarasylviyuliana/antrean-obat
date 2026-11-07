@@ -8,6 +8,7 @@ import { StatusBadge, PayBadge } from '@/components/Badges';
 import { flowFor, STATUS_LABEL } from '@/lib/constants';
 import { formatDateTime, parseDateTime } from '@/lib/format';
 import { deliveryEta, estimatedDeliveryMinutes, rupiah } from '@/lib/geo';
+import { CLINIC_WHATSAPP, CLINIC_WHATSAPP_DISPLAY } from '@/lib/contact';
 
 const CourierMap = dynamic(() => import('@/components/CourierMap'), {
   ssr: false,
@@ -83,7 +84,7 @@ export default function LacakDetail({ params }) {
 
   if (error)
     return (
-      <div className="rounded-2xl bg-white p-6 text-center shadow-sm">
+      <div className="surface-card p-6 text-center">
         <p className="text-red-600">{error}</p>
         <Link href="/lacak" className="btn-ghost mt-4">Coba kode lain</Link>
       </div>
@@ -92,6 +93,7 @@ export default function LacakDetail({ params }) {
 
   const flow = flowFor(order.method);
   const cancelled = order.status === 'DIBATALKAN';
+  const whatsappUrl = `https://wa.me/${CLINIC_WHATSAPP}?text=${encodeURIComponent(`Halo, saya ingin menanyakan pesanan ${order.orderCode}.`)}`;
   const idx = flow.indexOf(order.status);
   const needPay = order.method === 'DELIVERY' && order.paymentStatus !== 'PAID' && !cancelled;
   const eta = order.method === 'DELIVERY' && order.status === 'DISERAHKAN_KURIR'
@@ -108,7 +110,7 @@ export default function LacakDetail({ params }) {
   return (
     <div className="space-y-4">
       <SnapScript />
-      <section className="rounded-2xl bg-white p-5 shadow-sm">
+      <section className="surface-card p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-2">
           <div>
             <p className="text-xs text-slate-500">Kode pesanan</p>
@@ -138,10 +140,37 @@ export default function LacakDetail({ params }) {
               <br />
               {order.kelurahan ? `Desa/Kel. ${order.kelurahan}, ` : ''}Kec. {order.kecamatan}, {order.city || 'Kota Bandung'}
             </p>
-            <div className="mt-2"><PayBadge status={order.paymentStatus} /></div>
+            {(!cancelled || order.paymentStatus === 'PAID') && (
+              <div className="mt-2"><PayBadge status={order.paymentStatus} /></div>
+            )}
           </div>
         )}
       </section>
+
+      {cancelled && (
+        <section className={`rounded-2xl border p-5 ${order.paymentStatus === 'PAID' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'}`}>
+          <h2 className={`font-semibold ${order.paymentStatus === 'PAID' ? 'text-amber-900' : 'text-red-800'}`}>
+            {order.paymentStatus === 'PAID' ? 'Pesanan dibatalkan, pembayaran sudah diterima' : 'Pesanan dibatalkan — tidak perlu membayar'}
+          </h2>
+          <p className={`mt-1 text-sm ${order.paymentStatus === 'PAID' ? 'text-amber-800' : 'text-red-700'}`}>
+            {order.paymentStatus === 'PAID'
+              ? 'Hubungi apotek melalui WhatsApp untuk informasi pengembalian dana.'
+              : 'Jangan lanjutkan pembayaran. Jika Anda sudah membayar atau perlu informasi, hubungi apotek melalui WhatsApp.'}
+            {' '}Sebutkan kode pesanan <b>{order.orderCode}</b>.
+          </p>
+          <p className={`mt-3 text-sm ${order.paymentStatus === 'PAID' ? 'text-amber-900' : 'text-red-800'}`}>
+            <b>Alasan pembatalan:</b> {order.cancellationReason || 'Alasan belum dicatat. Silakan hubungi apotek untuk informasi lebih lanjut.'}
+          </p>
+          <a
+            className="mt-4 inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white hover:bg-green-700"
+            href={whatsappUrl}
+            target="_blank"
+            rel="noreferrer"
+          >
+            Hubungi WhatsApp {CLINIC_WHATSAPP_DISPLAY}
+          </a>
+        </section>
+      )}
 
       {needPay && (
         <section className="rounded-2xl border border-amber-200 bg-amber-50 p-5">
@@ -166,8 +195,8 @@ export default function LacakDetail({ params }) {
       )}
 
       {order.method === 'DELIVERY' && order.status === 'DISERAHKAN_KURIR' && (
-        <section className="space-y-3 rounded-2xl bg-white p-5 shadow-sm">
-          <h2 className="font-semibold">Peta dan estimasi pengantaran</h2>
+        <section className="surface-card space-y-3 p-5 sm:p-6">
+          <h2 className="section-title">Peta dan estimasi pengantaran</h2>
           <CourierMap
             destination={{ lat: Number(order.lat), lng: Number(order.lng) }}
             startedAt={order.updatedAt}
@@ -209,10 +238,10 @@ export default function LacakDetail({ params }) {
         </section>
       )}
 
-      <section className="rounded-2xl bg-white p-5 shadow-sm">
-        <h2 className="mb-3 font-semibold">Progres pesanan</h2>
+      <section className="surface-card p-5 sm:p-6">
+        <h2 className="section-title mb-4">Progres pesanan</h2>
         {cancelled ? (
-          <p className="text-red-600">Pesanan ini dibatalkan. Hubungi apotek klinik untuk informasi lebih lanjut.</p>
+          <p className="text-red-600">Pesanan ini dibatalkan. Lihat alasan pembatalan dan hubungi apotek melalui WhatsApp di atas jika perlu bantuan.</p>
         ) : (
           <ol className="space-y-3">
             {flow.map((s, i) => (

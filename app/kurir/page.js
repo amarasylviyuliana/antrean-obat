@@ -6,7 +6,7 @@ import { deliveryEta, rupiah } from '@/lib/geo';
 
 function TaskCard({ order, busyCode, onRelease, onComplete, canComplete }) {
   return (
-    <article className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+    <article className="surface-card space-y-3 p-4 sm:p-5">
       <div className="flex flex-wrap items-start justify-between gap-2">
         <div>
           <p className="font-bold text-teal-700">{order.order_code}</p>
@@ -160,14 +160,18 @@ export default function Kurir() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-xl font-bold">Tugas Kurir</h1>
-        <p className="text-sm text-slate-500">Klaim pesanan yang akan Anda antar. Daftar diperbarui otomatis.</p>
+      <div className="surface-card relative overflow-hidden p-5 sm:p-6">
+        <div className="absolute -right-7 -top-10 size-32 rounded-full bg-teal-50" aria-hidden />
+        <div className="relative">
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Panel pengantaran</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Tugas Kurir</h1>
+          <p className="mt-1 text-sm text-slate-500">Klaim pesanan yang akan Anda antar. Daftar diperbarui otomatis.</p>
+        </div>
       </div>
 
       {err && <div className="rounded-lg bg-red-50 p-3 text-sm text-red-700">{err}</div>}
 
-      <section className="space-y-3">
+      <section className="surface-card space-y-4 p-4 sm:p-5">
         <div className="flex flex-wrap gap-2">
           {[
             { id: 'active', label: 'Sedang dikerjakan', count: activeTasks.length },
@@ -176,7 +180,8 @@ export default function Kurir() {
           ].map((item) => (
             <button
               key={item.id}
-              className={`rounded-full px-3 py-2 text-sm font-semibold ${tab === item.id ? 'bg-teal-600 text-white' : 'bg-white text-slate-600 hover:bg-teal-50'}`}
+              aria-pressed={tab === item.id}
+              className={`rounded-full px-4 py-2 text-sm font-semibold transition ${tab === item.id ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
               onClick={() => {
                 setTab(item.id);
                 setSearch('');
@@ -211,7 +216,7 @@ export default function Kurir() {
         />
 
         {visibleOrders.length === 0 ? (
-          <p className="rounded-2xl bg-white p-4 text-sm text-slate-500 shadow-sm">
+          <p className="rounded-2xl border border-dashed border-slate-300 bg-slate-50/80 p-6 text-center text-sm text-slate-500">
             {normalizedSearch ? 'Pesanan tidak ditemukan.' : tab === 'active' ? 'Belum ada pesanan yang Anda klaim.' : tab === 'available' ? 'Tidak ada tugas yang menunggu kurir.' : 'Belum ada pesanan selesai.'}
           </p>
         ) : (
@@ -232,7 +237,7 @@ export default function Kurir() {
               }
               if (tab === 'completed') return <TaskCard key={order.order_code} order={order} />;
               return (
-                <article key={order.order_code} className="space-y-3 rounded-2xl bg-white p-4 shadow-sm">
+                <article key={order.order_code} className="surface-card space-y-3 p-4 sm:p-5">
                   <div className="flex flex-wrap items-start justify-between gap-2">
                     <div>
                       <p className="font-bold text-teal-700">{order.order_code}</p>
@@ -258,7 +263,7 @@ export default function Kurir() {
         )}
 
         {filteredOrders.length > pageSize && (
-          <div className="flex items-center justify-between rounded-xl bg-white p-3 text-sm">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 text-sm shadow-sm shadow-slate-900/[0.03]">
             <span className="text-slate-600">
               Halaman {currentPage} dari {pageCount} · {filteredOrders.length} pesanan
             </span>

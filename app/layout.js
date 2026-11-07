@@ -11,16 +11,26 @@ export default function RootLayout({ children }) {
   return (
     <html lang="id">
       <body className="min-h-screen">
-        <header className="border-b border-slate-200 bg-white">
-          <div className="mx-auto flex max-w-3xl items-center justify-between px-4 py-3">
-            <Link href="/" className="flex items-center gap-2 text-lg font-bold text-teal-700">
-              <span aria-hidden>💊</span> AntreObat
+        <header className="border-b border-white/70 bg-white/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur-md">
+          <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3.5 sm:px-6">
+            <Link href="/" className="group flex items-center gap-3 text-teal-800">
+              <span className="grid size-11 place-items-center rounded-2xl bg-teal-700 text-xl text-white shadow-md shadow-teal-900/15 transition group-hover:-rotate-3 group-hover:scale-105" aria-hidden>
+                💊
+              </span>
+              <span>
+                <span className="block text-lg font-extrabold leading-tight tracking-tight">AntreObat</span>
+                <span className="block text-[11px] font-medium tracking-wide text-slate-500">LAYANAN OBAT KLINIK</span>
+              </span>
             </Link>
+            <span className="hidden items-center gap-2 rounded-full border border-teal-100 bg-teal-50/80 px-3 py-1.5 text-xs font-semibold text-teal-800 sm:flex">
+              <span className="size-2 rounded-full bg-teal-500" aria-hidden />
+              Praktis dan mudah
+            </span>
           </div>
         </header>
-        <main className="mx-auto max-w-3xl px-4 py-6">{children}</main>
-        <footer className="py-6 text-center text-xs text-slate-400">
-          AntreObat · layanan mandiri obat, terpisah dari sistem pendaftaran klinik
+        <main className="mx-auto max-w-4xl px-4 py-7 sm:px-6 sm:py-9">{children}</main>
+        <footer className="mx-auto mt-8 max-w-4xl border-t border-slate-200/80 px-4 py-6 text-center text-xs leading-relaxed text-slate-500 sm:px-6">
+          <span className="font-semibold text-slate-600">AntreObat</span> · layanan mandiri obat, terpisah dari sistem pendaftaran klinik
         </footer>
       </body>
     </html>

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { findByCode, publicOrder } from '@/lib/orders';
-import { getTransactionStatus, applyPaymentStatus } from '@/lib/midtrans';
+import { getTransactionStatus, applyPaymentStatus, cancelAndSyncTransaction } from '@/lib/midtrans';
 
 export const dynamic = 'force-dynamic';
 
@@ -13,11 +13,19 @@ export async function POST(req) {
     if (!order) return NextResponse.json({ error: 'Pesanan tidak ditemukan.' }, { status: 404 });
 
     if (order.midtrans_order_id && order.payment_status !== 'PAID') {
-      const n = await getTransactionStatus(order.midtrans_order_id);
-      if (n && n.transaction_status) {
-        await applyPaymentStatus({ ...n, order_id: order.midtrans_order_id });
-        order = await findByCode(order.order_code);
+      if (order.status === 'DIBATALKAN' && order.payment_status === 'PENDING') {
+        try {
+          await cancelAndSyncTransaction(order.midtrans_order_id);
+        } catch (e) {
+          console.error(`[POST /api/payment/sync] Gagal membatalkan pembayaran pesanan ${order.order_code}:`, e);
+        }
+      } else {
+        const n = await getTransactionStatus(order.midtrans_order_id);
+        if (n && n.transaction_status) {
+          await applyPaymentStatus({ ...n, order_id: order.midtrans_order_id });
+        }
       }
+      order = await findByCode(order.order_code);
     }
     return NextResponse.json({ order: publicOrder(order) });
   } catch (e) {

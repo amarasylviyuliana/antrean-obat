@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { formatDateTime } from '@/lib/format';
-import { AREAS_BY_CITY, calcShipping, OUT_OF_RANGE_MSG } from '@/lib/geo';
+import { AREAS_BY_CITY, calcShipping, isPointInPolygon, OUT_OF_RANGE_MSG } from '@/lib/geo';
+import { getAreaBoundary } from '@/lib/area-boundaries';
 import { generateOrderCode, findByCode, publicOrder } from '@/lib/orders';
 import { PAYMENT_WINDOW_MINUTES } from '@/lib/payments';
 import { sendOrderEmail } from '@/lib/mailer';
+import { EmailValidationError, validateEmailAddress } from '@/lib/email-validation';
 
 export const dynamic = 'force-dynamic';
 
@@ -16,7 +18,7 @@ export async function POST(req) {
     const queueNumber = clean(b.queueNumber, 40);
     const patientName = clean(b.patientName, 120);
     const phone = clean(b.phone, 25);
-    const email = clean(b.email, 150);
+    let email = clean(b.email, 151);
     const method = b.method;
 
     if (!/^(A-\d{1,3}|RM-\d{1,10})$/.test(queueNumber)) {
@@ -25,9 +27,17 @@ export async function POST(req) {
     if (!patientName) return err('Nama pasien wajib diisi.');
     if (!/^[0-9+\-\s]{8,20}$/.test(phone)) return err('Nomor HP tidak valid.');
     if (method === 'DELIVERY' && !email) return err('Email wajib diisi untuk pengingat dan pemberitahuan pembayaran.');
-    if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return err('Format email tidak valid.');
     if (method !== 'PICKUP' && method !== 'DELIVERY') return err('Pilih metode layanan obat.');
-
+    if (email) {
+      try {
+        email = await validateEmailAddress(email);
+      } catch (validationError) {
+        if (validationError instanceof EmailValidationError) {
+          return NextResponse.json({ error: validationError.message }, { status: validationError.status });
+        }
+        throw validationError;
+      }
+    }
     let pickupTime = null;
     let kota = null;
     let kecamatan = null;
@@ -59,6 +69,11 @@ export async function POST(req) {
       if (!area) return err('Pilih kecamatan sesuai kota/kabupaten.');
       if (!kelurahan || !area.kelurahan.includes(kelurahan)) return err('Pilih kelurahan yang sesuai dengan kecamatan.');
       if (!addressDetail) return err('Alamat lengkap (jalan, nomor rumah) wajib diisi.');
+      const boundary = getAreaBoundary(kota, kecamatan, kelurahan);
+      if (!boundary) throw new Error(`Boundary data is missing for ${kota}/${kecamatan}/${kelurahan}`);
+      if (!isPointInPolygon(lat, lng, boundary.path)) {
+        return err('Titik pengantaran harus berada di kelurahan yang dipilih.');
+      }
       const ship = calcShipping(lat, lng); // dihitung ulang di server
       if (!ship.within) return err(OUT_OF_RANGE_MSG);
       distanceKm = ship.distanceKm;

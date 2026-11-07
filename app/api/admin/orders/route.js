@@ -11,14 +11,27 @@ export async function GET(req) {
     const searchParams = new URL(req.url).searchParams;
     const requestedStatus = searchParams.get('status');
     const status = STATUS_LABEL[requestedStatus] ? requestedStatus : null;
+    const search = (searchParams.get('q') || '').trim().slice(0, 100).toLocaleLowerCase('id-ID');
     const requestedPage = Number.parseInt(searchParams.get('page') || '1', 10);
     const pageSize = 10;
     const safePage = Number.isFinite(requestedPage) ? Math.max(1, requestedPage) : 1;
-    const conditions = ["(status <> 'SELESAI' OR updated_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR))"];
+    const conditions = [];
     const params = [];
+    if (!search) {
+      conditions.push("(status <> 'SELESAI' OR updated_at >= DATE_SUB(NOW(), INTERVAL 24 HOUR))");
+    }
     if (status) {
       conditions.push('status = ?');
       params.push(status);
+    }
+    if (search) {
+      conditions.push(
+        `(LOCATE(?, LOWER(order_code)) > 0
+          OR LOCATE(?, LOWER(queue_number)) > 0
+          OR LOCATE(?, LOWER(patient_name)) > 0
+          OR LOCATE(?, LOWER(phone)) > 0)`
+      );
+      params.push(search, search, search, search);
     }
     const where = ` WHERE ${conditions.join(' AND ')}`;
     const sql = `SELECT * FROM prescriptions${where}`;
