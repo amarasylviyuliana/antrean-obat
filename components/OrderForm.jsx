@@ -142,7 +142,8 @@ export default function OrderForm() {
     ev.preventDefault();
     setError('');
     if (!method) return setError('Pilih metode layanan obat terlebih dahulu.');
-    if (form.email.trim() && !(await checkEmail(form.email))) {
+    if (!form.email.trim()) return setError('Email wajib diisi.');
+    if (!(await checkEmail(form.email))) {
       return setError('Periksa kembali alamat email sebelum melanjutkan.');
     }
     if (
@@ -251,13 +252,13 @@ export default function OrderForm() {
           </label>
           <label className="block text-sm">
             <span className="mb-1 block font-medium">
-              Email {method === 'DELIVERY' ? '(wajib untuk notifikasi pembayaran)' : '(opsional, untuk notifikasi)'}
+              Email *
             </span>
             <input
               className={`input ${emailCheck.status === 'invalid' ? 'border-red-500 focus:border-red-500 focus:ring-red-100' : ''}`}
               type="email"
               maxLength={150}
-              required={method === 'DELIVERY'}
+              required
               aria-invalid={emailCheck.status === 'invalid'}
               aria-describedby="email-validation"
               value={form.email}

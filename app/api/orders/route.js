@@ -26,8 +26,8 @@ export async function POST(req) {
     }
     if (!patientName) return err('Nama pasien wajib diisi.');
     if (!/^[0-9+\-\s]{8,20}$/.test(phone)) return err('Nomor HP tidak valid.');
-    if (method === 'DELIVERY' && !email) return err('Email wajib diisi untuk pengingat dan pemberitahuan pembayaran.');
     if (method !== 'PICKUP' && method !== 'DELIVERY') return err('Pilih metode layanan obat.');
+    if (!email) return err('Email wajib diisi untuk menerima notifikasi pesanan.');
     if (email) {
       try {
         email = await validateEmailAddress(email);
