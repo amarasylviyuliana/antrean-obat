@@ -1,6 +1,7 @@
 import './globals.css';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export const metadata = {
   title: 'AntreObat - Layanan Obat Tanpa Antre',
@@ -13,14 +14,15 @@ export default function RootLayout({ children }) {
       <body className="min-h-screen">
         <header className="border-b border-white/70 bg-white/85 shadow-sm shadow-slate-900/[0.03] backdrop-blur-md">
           <div className="mx-auto flex max-w-4xl items-center justify-between px-4 py-3.5 sm:px-6">
-            <Link href="/" className="group flex items-center gap-3 text-teal-800">
-              <span className="grid size-11 place-items-center rounded-2xl bg-teal-700 text-xl text-white shadow-md shadow-teal-900/15 transition group-hover:-rotate-3 group-hover:scale-105" aria-hidden>
-                💊
-              </span>
-              <span>
-                <span className="block text-lg font-extrabold leading-tight tracking-tight">AntreObat</span>
-                <span className="block text-[11px] font-medium tracking-wide text-slate-500">LAYANAN OBAT KLINIK</span>
-              </span>
+            <Link href="/" className="group flex items-center">
+              <Image
+                src="/antreobat-logo.png"
+                alt="AntreObat - Antre Lebih Mudah, Obat Lebih Cepat"
+                width={480}
+                height={200}
+                priority
+                className="h-[68px] w-[200px] object-cover object-center sm:h-[76px] sm:w-[230px]"
+              />
             </Link>
             <span className="hidden items-center gap-2 rounded-full border border-teal-100 bg-teal-50/80 px-3 py-1.5 text-xs font-semibold text-teal-800 sm:flex">
               <span className="size-2 rounded-full bg-teal-500" aria-hidden />
