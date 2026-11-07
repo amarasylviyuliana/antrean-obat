@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/format';
 import { deliveryEta, rupiah } from '@/lib/geo';
 
-function TaskCard({ order, busyCode, onClaim, onRelease, onComplete, canComplete, statusLabel }) {
+function TaskCard({ order, busyCode, onClaim, onComplete, canComplete, statusLabel }) {
   const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.lat},${order.lng}`)}`;
 
   return (
@@ -58,15 +58,6 @@ function TaskCard({ order, busyCode, onClaim, onRelease, onComplete, canComplete
             onClick={() => onClaim(order.order_code)}
           >
             {busyCode === order.order_code ? 'Memproses...' : '🛵 Klaim tugas ini'}
-          </button>
-        )}
-        {onRelease && (
-          <button
-            className="btn-ghost"
-            disabled={busyCode === order.order_code}
-            onClick={() => onRelease(order.order_code)}
-          >
-            Lepas tugas
           </button>
         )}
         {onComplete && (
@@ -145,12 +136,12 @@ export default function Kurir() {
     return () => clearInterval(timer);
   }, []);
 
-  async function updateClaim(orderCode, method) {
+  async function claimTask(orderCode) {
     setBusyCode(orderCode);
     setErr('');
     try {
       const res = await fetch('/api/kurir/orders', {
-        method,
+        method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ orderCode }),
       });
@@ -254,7 +245,6 @@ export default function Kurir() {
                     key={order.order_code}
                     order={order}
                     busyCode={busyCode}
-                    onRelease={(code) => updateClaim(code, 'DELETE')}
                     onComplete={completeOrder}
                     canComplete={eta !== null && now >= eta}
                     statusLabel="Sedang diantar"
@@ -267,7 +257,7 @@ export default function Kurir() {
                   key={order.order_code}
                   order={order}
                   busyCode={busyCode}
-                  onClaim={(code) => updateClaim(code, 'POST')}
+                  onClaim={claimTask}
                   statusLabel="Siap diantar"
                 />
               );
