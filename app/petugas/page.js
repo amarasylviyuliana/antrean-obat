@@ -7,6 +7,14 @@ import { formatDateTime } from '@/lib/format';
 import { rupiah } from '@/lib/geo';
 
 const TABS = ['SEMUA', 'MENUNGGU_VERIFIKASI', 'DIPROSES_DIRACIK', 'SIAP_DIAMBIL', 'DISERAHKAN_KURIR', 'SELESAI', 'DIBATALKAN'];
+const STATUS_ACCENT = {
+  MENUNGGU_VERIFIKASI: 'border-l-amber-400',
+  DIPROSES_DIRACIK: 'border-l-sky-500',
+  SIAP_DIAMBIL: 'border-l-emerald-500',
+  DISERAHKAN_KURIR: 'border-l-teal-600',
+  SELESAI: 'border-l-slate-300',
+  DIBATALKAN: 'border-l-red-400',
+};
 
 export default function Petugas() {
   const [user, setUser] = useState(undefined); // undefined = memuat, null = belum login
@@ -25,6 +33,8 @@ export default function Petugas() {
   const [busyCode, setBusyCode] = useState('');
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
+  const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const readyCount = (counts.SIAP_DIAMBIL || 0) + (counts.DISERAHKAN_KURIR || 0);
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
       .then((r) => r.json())
@@ -120,36 +130,62 @@ export default function Petugas() {
 
   return (
     <div className="space-y-4">
-      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-5">
+      <div className="surface-card flex flex-wrap items-center justify-between gap-3 p-5 sm:p-6">
         <div>
-          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Panel petugas</p>
-          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Dashboard Farmasi</h1>
+          <p className="text-xs font-bold uppercase tracking-[0.16em] text-teal-700">Panel petugas farmasi</p>
+          <h1 className="mt-1 text-2xl font-extrabold tracking-tight text-slate-900">Dashboard Farmasi AntreObat</h1>
+          <p className="mt-1 text-sm text-slate-500">Kelola antrean dan pesanan obat dari satu tempat.</p>
         </div>
         <div className="flex items-center gap-3 text-sm">
-          <span className="rounded-full bg-slate-50 px-3 py-2 font-medium text-slate-600">{user.name || user.username}</span>
+          <span className="rounded-full bg-teal-50 px-3 py-2 font-semibold text-teal-800">Petugas Farmasi</span>
           <button className="btn-ghost" onClick={logout}>Keluar</button>
         </div>
       </div>
 
-      <div className="flex flex-wrap gap-2">
-        {TABS.map((t) => (
-          <button
-            key={t}
-            onClick={() => {
-              setPage(1);
-              setTab(t);
-            }}
-            aria-pressed={tab === t}
-            className={`rounded-full px-4 py-2 text-xs font-semibold transition ${tab === t ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
-          >
-            {t === 'SEMUA' ? 'Semua' : STATUS_LABEL[t]}
-            {t !== 'SEMUA' && counts[t] ? ` (${counts[t]})` : ''}
-          </button>
+      <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5">
+        {[
+          { label: 'Total antrean', count: totalCount, note: 'Pesanan aktif dan terbaru', tone: 'text-slate-900', icon: '▤' },
+          { label: 'Menunggu verifikasi', count: counts.MENUNGGU_VERIFIKASI || 0, note: 'Perlu diperiksa', tone: 'text-amber-700', icon: '◷' },
+          { label: 'Sedang diracik', count: counts.DIPROSES_DIRACIK || 0, note: 'Dalam proses farmasi', tone: 'text-sky-700', icon: '⚗' },
+          { label: 'Siap diambil / diantar', count: readyCount, note: 'Menunggu serah terima', tone: 'text-emerald-700', icon: '✓' },
+          { label: 'Selesai · 24 jam', count: counts.SELESAI || 0, note: 'Tuntas diserahkan', tone: 'text-teal-800', icon: '◉' },
+        ].map((item) => (
+          <article key={item.label} className="surface-card min-w-0 p-4">
+            <div className="flex items-start justify-between gap-2">
+              <p className="text-xs font-medium leading-4 text-slate-500">{item.label}</p>
+              <span className={`text-sm ${item.tone}`} aria-hidden>{item.icon}</span>
+            </div>
+            <p className={`mt-2 text-2xl font-extrabold tracking-tight ${item.tone}`}>{item.count}</p>
+            <p className="mt-1 text-[11px] text-slate-400">{item.note}</p>
+          </article>
         ))}
-      </div>
+      </section>
+
+      <section className="surface-card space-y-3 p-4">
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h2 className="text-sm font-bold text-slate-800">Filter status</h2>
+          <span className="text-xs text-slate-500">Pembaruan otomatis setiap 5 detik</span>
+        </div>
+        <div className="flex gap-2 overflow-x-auto pb-1">
+          {TABS.map((t) => (
+            <button
+              key={t}
+              onClick={() => {
+                setPage(1);
+                setTab(t);
+              }}
+              aria-pressed={tab === t}
+              className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${tab === t ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
+            >
+              {t === 'SEMUA' ? 'Semua' : STATUS_LABEL[t]}
+              {t !== 'SEMUA' && counts[t] ? ` (${counts[t]})` : ''}
+            </button>
+          ))}
+        </div>
+      </section>
 
       <form
-        className="surface-card flex flex-col gap-3 p-4 sm:flex-row"
+        className="surface-card flex flex-col gap-3 p-4"
         onSubmit={(event) => {
           event.preventDefault();
           setPage(1);
@@ -166,7 +202,7 @@ export default function Petugas() {
           onChange={(event) => setSearchInput(event.target.value)}
           placeholder="Cari kode pesanan, antrean/RM, nama pasien, atau nomor HP"
         />
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           <button type="submit" className="btn-primary">Cari pesanan</button>
           {search && (
             <button
@@ -182,7 +218,7 @@ export default function Petugas() {
             </button>
           )}
         </div>
-        <p className="text-xs text-slate-500 sm:self-center">
+        <p className="text-xs text-slate-500">
           Pesanan selesai lebih dari 24 jam tetap bisa ditemukan lewat pencarian.
         </p>
       </form>
@@ -251,62 +287,74 @@ export default function Petugas() {
             !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
           const showNext = next && !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
           return (
-            <article key={o.order_code} className="surface-card p-4 sm:p-5">
-              <div className="flex flex-wrap items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-teal-700">{o.order_code}</span>
-                  <span className="text-xs text-slate-500">Antrean {o.queue_number}</span>
-                </div>
-                <div className="flex gap-2">
+            <article key={o.order_code} className={`surface-card border-l-4 p-4 sm:p-5 ${STATUS_ACCENT[o.status] || 'border-l-slate-300'}`}>
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Antrean</span>
+                  <span className="text-lg font-extrabold text-teal-800">{o.queue_number}</span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">#{o.order_code}</span>
                   <StatusBadge status={o.status} />
                   {o.method === 'DELIVERY' && (o.status !== 'DIBATALKAN' || o.payment_status === 'PAID') && <PayBadge status={o.payment_status} />}
+                  <span className="text-xs text-slate-500">{o.method === 'DELIVERY' ? '🛵 Diantar ke rumah' : '🚶 Diambil di klinik'}</span>
                 </div>
+                <p className="text-xs text-slate-500">Dibuat {formatDateTime(o.created_at)}</p>
               </div>
-              <div className="mt-2 grid gap-1 text-sm sm:grid-cols-2">
-                <p className="text-slate-600">Dibuat: {formatDateTime(o.created_at)}</p>
-                {o.status === 'DIBATALKAN' && o.cancellation_reason && (
-                  <p className="text-red-700 sm:col-span-2"><b>Alasan pembatalan:</b> {o.cancellation_reason}</p>
-                )}
-                {o.method === 'DELIVERY' && o.status !== 'DIBATALKAN' && o.payment_status !== 'PAID' && o.payment_expires_at && (
-                  <p className="text-amber-800">Batas bayar: {formatDateTime(o.payment_expires_at)}</p>
-                )}
-                <p><b>{o.patient_name}</b> · {o.phone}</p>
-                <p>{o.method === 'DELIVERY' ? '🛵 Antar' : '🚶 Ambil sendiri'}</p>
-                {o.method === 'PICKUP' ? (
-                  <p>Jam ambil: <b>{String(o.pickup_time).slice(0, 16)}</b></p>
-                ) : (
-                  <p>
-                    {o.kelurahan ? `Desa/Kel. ${o.kelurahan}, ` : ''}Kec. {o.kecamatan}, {o.kota || 'Kota Bandung'} · {o.distance_km} km · {rupiah(o.shipping_fee)}
-                  </p>
-                )}
-              </div>
-              {o.method === 'DELIVERY' && (
-                <p className="mt-1 text-sm text-slate-600">
-                  {o.address_detail}{' '}
-                  <a className="text-teal-700 underline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps?q=${o.lat},${o.lng}`}>
-                    Buka peta
-                  </a>
-                </p>
-              )}
-              <div className="mt-3 flex flex-wrap gap-2">
-                {showNext && (
-                  <button
-                    className="btn-primary"
-                    disabled={busyCode === o.order_code}
-                    onClick={() => setStatus(o.order_code, next)}
-                  >
-                    {STATUS_LABEL[next]}
-                  </button>
-                )}
-                {canCancel && (
-                  <button
-                    className="btn-ghost text-red-600"
-                    disabled={busyCode === o.order_code}
-                    onClick={() => { setCancelTarget(o); setCancelReason(''); setErr(''); }}
-                  >
-                    Batalkan
-                  </button>
-                )}
+
+              <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-[1fr_1.5fr_auto] sm:items-start">
+                <div className="min-w-0">
+                  <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pasien</p>
+                  <p className="mt-1 font-bold text-slate-900">{o.patient_name}</p>
+                  <a className="mt-1 inline-flex text-sm text-teal-700 hover:underline" href={`tel:${o.phone}`}>☎ {o.phone}</a>
+                </div>
+                <div className="min-w-0 text-sm">
+                  {o.method === 'PICKUP' ? (
+                    <>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pengambilan</p>
+                      <p className="mt-1 text-slate-700">Jam ambil: <b>{String(o.pickup_time).slice(0, 16)}</b></p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Alamat pengantaran</p>
+                      <p className="mt-1 text-slate-700">
+                        {o.address_detail}
+                        <br />
+                        {o.kelurahan ? `Desa/Kel. ${o.kelurahan}, ` : ''}Kec. {o.kecamatan}, {o.kota || 'Kota Bandung'}
+                      </p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1">
+                        <span className="text-xs text-slate-500">{o.distance_km} km · {rupiah(o.shipping_fee)}</span>
+                        <a className="text-xs font-semibold text-teal-700 underline" target="_blank" rel="noreferrer" href={`https://www.google.com/maps?q=${o.lat},${o.lng}`}>
+                          Buka peta
+                        </a>
+                      </div>
+                    </>
+                  )}
+                  {o.status === 'DIBATALKAN' && o.cancellation_reason && (
+                    <p className="mt-2 text-red-700"><b>Alasan pembatalan:</b> {o.cancellation_reason}</p>
+                  )}
+                  {o.method === 'DELIVERY' && o.status !== 'DIBATALKAN' && o.payment_status !== 'PAID' && o.payment_expires_at && (
+                    <p className="mt-2 text-xs text-amber-800">Batas bayar: {formatDateTime(o.payment_expires_at)}</p>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2 sm:justify-end">
+                  {showNext && (
+                    <button
+                      className="btn-primary"
+                      disabled={busyCode === o.order_code}
+                      onClick={() => setStatus(o.order_code, next)}
+                    >
+                      {STATUS_LABEL[next]}
+                    </button>
+                  )}
+                  {canCancel && (
+                    <button
+                      className="btn-ghost text-red-600"
+                      disabled={busyCode === o.order_code}
+                      onClick={() => { setCancelTarget(o); setCancelReason(''); setErr(''); }}
+                    >
+                      Batalkan
+                    </button>
+                  )}
+                </div>
               </div>
             </article>
           );
