@@ -33,7 +33,10 @@ export default function Petugas() {
   const [busyCode, setBusyCode] = useState('');
   const [cancelTarget, setCancelTarget] = useState(null);
   const [cancelReason, setCancelReason] = useState('');
-  const totalCount = Object.values(counts).reduce((sum, count) => sum + count, 0);
+  const totalCount = Object.entries(counts).reduce(
+    (sum, [status, count]) => sum + (status === 'DIBATALKAN' ? 0 : count),
+    0
+  );
   const readyCount = (counts.SIAP_DIAMBIL || 0) + (counts.DISERAHKAN_KURIR || 0);
   useEffect(() => {
     fetch('/api/auth/me', { cache: 'no-store' })
@@ -166,7 +169,7 @@ export default function Petugas() {
           <h2 className="text-sm font-bold text-slate-800">Filter status</h2>
           <span className="text-xs text-slate-500">Pembaruan otomatis setiap 5 detik</span>
         </div>
-        <div className="flex gap-2 overflow-x-auto pb-1">
+        <div className="flex flex-wrap gap-2">
           {TABS.map((t) => (
             <button
               key={t}
@@ -175,7 +178,7 @@ export default function Petugas() {
                 setTab(t);
               }}
               aria-pressed={tab === t}
-              className={`shrink-0 rounded-full px-4 py-2 text-xs font-semibold transition ${tab === t ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
+              className={`rounded-full px-3 py-2 text-xs font-semibold transition ${tab === t ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
             >
               {t === 'SEMUA' ? 'Semua' : STATUS_LABEL[t]}
               {t !== 'SEMUA' && counts[t] ? ` (${counts[t]})` : ''}
@@ -287,35 +290,32 @@ export default function Petugas() {
             !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
           const showNext = next && !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
           return (
-            <article key={o.order_code} className={`surface-card border-l-4 p-4 sm:p-5 ${STATUS_ACCENT[o.status] || 'border-l-slate-300'}`}>
-              <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <span className="text-xs font-bold uppercase tracking-wide text-slate-400">Antrean</span>
-                  <span className="text-lg font-extrabold text-teal-800">{o.queue_number}</span>
-                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-600">#{o.order_code}</span>
+            <article key={o.order_code} className={`rounded-2xl border border-slate-200 border-l-4 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:px-5 sm:py-4 ${STATUS_ACCENT[o.status] || 'border-l-slate-300'}`}>
+              <div className="flex flex-wrap items-center gap-2">
+                  <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Antrean</span>
+                  <span className="text-base font-extrabold text-teal-800">{o.queue_number}</span>
+                  <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">#{o.order_code}</span>
                   <StatusBadge status={o.status} />
                   {o.method === 'DELIVERY' && (o.status !== 'DIBATALKAN' || o.payment_status === 'PAID') && <PayBadge status={o.payment_status} />}
                   <span className="text-xs text-slate-500">{o.method === 'DELIVERY' ? '🛵 Diantar ke rumah' : '🚶 Diambil di klinik'}</span>
-                </div>
-                <p className="text-xs text-slate-500">Dibuat {formatDateTime(o.created_at)}</p>
               </div>
 
-              <div className="mt-4 grid gap-4 border-t border-slate-100 pt-4 sm:grid-cols-[1fr_1.5fr_auto] sm:items-start">
+              <div className="mt-3 grid gap-3 border-t border-slate-100 pt-3 sm:grid-cols-[0.9fr_1.5fr_auto] sm:items-center">
                 <div className="min-w-0">
                   <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pasien</p>
-                  <p className="mt-1 font-bold text-slate-900">{o.patient_name}</p>
-                  <a className="mt-1 inline-flex text-sm text-teal-700 hover:underline" href={`tel:${o.phone}`}>☎ {o.phone}</a>
+                  <p className="mt-0.5 font-bold text-slate-900">{o.patient_name}</p>
+                  <a className="mt-0.5 inline-flex text-xs text-teal-700 hover:underline" href={`tel:${o.phone}`}>☎ {o.phone}</a>
                 </div>
-                <div className="min-w-0 text-sm">
+                <div className="min-w-0 text-[13px]">
                   {o.method === 'PICKUP' ? (
                     <>
                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pengambilan</p>
-                      <p className="mt-1 text-slate-700">Jam ambil: <b>{String(o.pickup_time).slice(0, 16)}</b></p>
+                      <p className="mt-0.5 text-slate-700">Jam ambil: <b>{String(o.pickup_time).slice(0, 16)}</b></p>
                     </>
                   ) : (
                     <>
                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Alamat pengantaran</p>
-                      <p className="mt-1 text-slate-700">
+                      <p className="mt-0.5 text-slate-700">
                         {o.address_detail}
                         <br />
                         {o.kelurahan ? `Desa/Kel. ${o.kelurahan}, ` : ''}Kec. {o.kecamatan}, {o.kota || 'Kota Bandung'}
@@ -335,10 +335,10 @@ export default function Petugas() {
                     <p className="mt-2 text-xs text-amber-800">Batas bayar: {formatDateTime(o.payment_expires_at)}</p>
                   )}
                 </div>
-                <div className="flex flex-wrap gap-2 sm:justify-end">
+                <div className="flex flex-wrap gap-2 sm:max-w-44 sm:flex-col sm:items-stretch">
                   {showNext && (
                     <button
-                      className="btn-primary"
+                      className="btn-primary px-3 py-2 text-xs"
                       disabled={busyCode === o.order_code}
                       onClick={() => setStatus(o.order_code, next)}
                     >
@@ -347,7 +347,7 @@ export default function Petugas() {
                   )}
                   {canCancel && (
                     <button
-                      className="btn-ghost text-red-600"
+                      className="btn-ghost px-3 py-2 text-xs text-red-600"
                       disabled={busyCode === o.order_code}
                       onClick={() => { setCancelTarget(o); setCancelReason(''); setErr(''); }}
                     >
@@ -356,6 +356,7 @@ export default function Petugas() {
                   )}
                 </div>
               </div>
+              <p className="mt-2 text-[11px] text-slate-400">Dibuat {formatDateTime(o.created_at)}</p>
             </article>
           );
         })}
