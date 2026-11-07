@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { formatDateTime } from '@/lib/format';
 import { deliveryEta, rupiah } from '@/lib/geo';
 
-function TaskCard({ order, busyCode, onRelease, onComplete, canComplete, statusLabel }) {
+function TaskCard({ order, busyCode, onClaim, onRelease, onComplete, canComplete, statusLabel }) {
   const mapUrl = `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(`${order.lat},${order.lng}`)}`;
 
   return (
