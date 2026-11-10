@@ -1,4 +1,5 @@
 import OrderForm from '@/components/OrderForm';
+import OrderRecovery from '@/components/OrderRecovery';
 
 export default function Home() {
   return (
@@ -20,6 +21,7 @@ export default function Home() {
           </div>
         </div>
       </section>
+      <OrderRecovery />
       <OrderForm />
     </div>
   );
