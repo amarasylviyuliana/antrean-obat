@@ -11,7 +11,7 @@ export const dynamic = 'force-dynamic';
 
 const EMAIL_INTRO = {
   DIPROSES_DIRACIK: 'Resep Anda sudah diverifikasi dan obat sedang diracik oleh apoteker.',
-  SIAP_DIAMBIL: 'Obat Anda sudah siap. Silakan ambil di apotek klinik sesuai jam yang Anda pilih.',
+  SIAP_DIAMBIL: 'Obat Anda sudah siap. Silakan ambil di apotek klinik.',
   DISERAHKAN_KURIR: 'Obat Anda sudah diserahkan ke kurir dan sedang dalam perjalanan ke alamat Anda.',
   SELESAI: 'Pesanan obat Anda telah selesai. Semoga lekas sembuh!',
   DIBATALKAN: 'Mohon maaf, pesanan obat Anda dibatalkan dan tidak perlu dibayar. Alasan pembatalan tercantum di bawah. Jika perlu informasi lebih lanjut, hubungi apotek melalui WhatsApp 0895 4002 000203 dan sebutkan kode pesanan.',

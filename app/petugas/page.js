@@ -310,7 +310,7 @@ export default function Petugas() {
                   {o.method === 'PICKUP' ? (
                     <>
                       <p className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Pengambilan</p>
-                      <p className="mt-0.5 text-slate-700">Jam ambil: <b>{String(o.pickup_time).slice(0, 16)}</b></p>
+                      <p className="mt-0.5 text-slate-700">Pasien akan menerima email saat obat siap diambil.</p>
                     </>
                   ) : (
                     <>

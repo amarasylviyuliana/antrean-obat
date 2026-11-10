@@ -12,21 +12,10 @@ const MapPicker = dynamic(() => import('./MapPicker'), {
   loading: () => <div className="h-72 animate-pulse rounded-xl bg-slate-200" />,
 });
 
-function pad(n) {
-  return String(n).padStart(2, '0');
-}
-function toLocalInput(d) {
-  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
-}
-function plusMinutes(min) {
-  return toLocalInput(new Date(Date.now() + min * 60000));
-}
-
 export default function OrderForm() {
   const router = useRouter();
   const [form, setForm] = useState({ numberType: 'ANTREAN', numberDigits: '', patientName: '', phone: '', email: '' });
   const [method, setMethod] = useState('');
-  const [pickupTime, setPickupTime] = useState('');
   const [city, setCity] = useState('');
   const [area, setArea] = useState(null); // { kecamatan, kelurahan, lat, lng }
   const [pin, setPin] = useState(null); // { lat, lng }
@@ -160,7 +149,6 @@ export default function OrderForm() {
         ...form,
         queueNumber: `${form.numberType === 'RM' ? 'RM' : 'A'}-${form.numberDigits}`,
         method,
-        pickupTime: method === 'PICKUP' ? pickupTime : undefined,
         kota: city,
         kecamatan: area?.kecamatan,
         kelurahan: area?.kelurahan,
@@ -296,7 +284,7 @@ export default function OrderForm() {
           >
             <div className="mb-3 grid size-11 place-items-center rounded-xl bg-teal-100 text-2xl">🚶</div>
             <div className="font-bold text-slate-900">Diambil Lagi Nanti</div>
-            <div className="text-sm text-slate-500">Tentukan jam ambil sendiri di klinik. Gratis.</div>
+            <div className="text-sm text-slate-500">Gratis. Kami akan memberi kabar lewat email saat obat siap diambil.</div>
           </button>
           <button
             type="button"
@@ -310,35 +298,6 @@ export default function OrderForm() {
           </button>
         </div>
       </section>
-
-      {method === 'PICKUP' && (
-        <section className="surface-card p-5 sm:p-6">
-          <h2 className="section-title mb-3 flex items-center gap-2.5">
-            <span className="grid size-7 place-items-center rounded-lg bg-teal-50 text-xs font-extrabold text-teal-800">3</span>
-            Kapan Anda mengambil obat?
-          </h2>
-          <div className="mb-3 flex flex-wrap gap-2">
-            {[
-              ['1 jam lagi', 60],
-              ['2 jam lagi', 120],
-              ['3 jam lagi', 180],
-            ].map(([label, m]) => (
-              <button key={label} type="button" className="btn-ghost" onClick={() => setPickupTime(plusMinutes(m))}>
-                {label}
-              </button>
-            ))}
-          </div>
-          <input
-            className="input"
-            type="datetime-local"
-            required
-            min={plusMinutes(0)}
-            value={pickupTime}
-            onChange={(e) => setPickupTime(e.target.value)}
-          />
-          <p className="mt-2 text-xs text-slate-500">Waktu setempat (WIB). Obat disiapkan sebelum jam tersebut.</p>
-        </section>
-      )}
 
       {method === 'DELIVERY' && (
         <section className="surface-card space-y-4 p-5 sm:p-6">

@@ -27,6 +27,7 @@ Layanan obat mandiri (ambil nanti / diantar) untuk klinik. Next.js 14 + Tailwind
 
 - Ambil sendiri: `MENUNGGU_VERIFIKASI` > `DIPROSES_DIRACIK` > `SIAP_DIAMBIL` > `SELESAI`
 - Diantar: `MENUNGGU_VERIFIKASI` > `DIPROSES_DIRACIK` > `DISERAHKAN_KURIR` > `SELESAI`
+- Untuk ambil sendiri, pasien menerima email saat obat berstatus `SIAP_DIAMBIL`; pasien diminta datang setelah menerima pemberitahuan tersebut.
 - Pesanan antar hanya bisa diproses setelah ongkir lunas. Pesanan yang belum diserahkan ke kurir dapat dibatalkan petugas; pesanan yang sudah dalam pengantaran tidak dapat dibatalkan dari dashboard.
 - Saat pesanan dibatalkan, tautan pembayaran dinonaktifkan dan batas bayar tidak lagi ditampilkan. Pasien diarahkan menghubungi apotek melalui WhatsApp; bila pembayaran sudah diterima, halaman lacak meminta pasien menghubungi apotek untuk informasi pengembalian dana.
 - Petugas wajib mengisi alasan saat membatalkan pesanan. Alasan tampil di halaman lacak dan email pasien. Pasien dapat menghubungi apotek melalui WhatsApp `0895 4002 000203`.

@@ -48,14 +48,7 @@ export async function POST(req) {
     let distanceKm = null;
     let fee = 0;
 
-    if (method === 'PICKUP') {
-      const m = /^(\d{4}-\d{2}-\d{2})T(\d{2}:\d{2})$/.exec(String(b.pickupTime || ''));
-      if (!m) return err('Tentukan jam pengambilan obat.');
-      const when = new Date(`${m[1]}T${m[2]}:00+07:00`);
-      if (isNaN(when) || when.getTime() < Date.now() - 5 * 60 * 1000)
-        return err('Jam pengambilan harus di waktu yang akan datang.');
-      pickupTime = `${m[1]} ${m[2]}:00`;
-    } else {
+    if (method === 'DELIVERY') {
       lat = Number(b.lat);
       lng = Number(b.lng);
       if (!Number.isFinite(lat) || !Number.isFinite(lng)) return err('Pilih lokasi pengantaran di peta.');

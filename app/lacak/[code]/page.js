@@ -126,9 +126,7 @@ export default function LacakDetail({ params }) {
             <dt className="text-slate-500">Metode</dt>
             <dd className="font-medium">{order.method === 'DELIVERY' ? '🛵 Diantar ke rumah' : '🚶 Diambil di klinik'}</dd>
           </div>
-          {order.method === 'PICKUP' ? (
-            <div><dt className="text-slate-500">Jam ambil</dt><dd className="font-medium">{String(order.pickupTime).slice(0, 16).replace('T', ' ')} WIB</dd></div>
-          ) : (
+          {order.method === 'DELIVERY' && (
             <div><dt className="text-slate-500">Ongkir</dt><dd className="font-medium">{rupiah(order.shippingFee)} ({order.distanceKm} km)</dd></div>
           )}
         </dl>
@@ -146,6 +144,16 @@ export default function LacakDetail({ params }) {
           </div>
         )}
       </section>
+
+      {order.method === 'PICKUP' && !cancelled && (
+        <section className="rounded-2xl bg-teal-50 p-4 text-sm text-teal-900">
+          {order.status === 'SIAP_DIAMBIL'
+            ? 'Obat sudah siap diambil di apotek klinik.'
+            : order.status === 'SELESAI'
+              ? 'Pesanan ini sudah selesai.'
+              : 'Silakan tunggu email bahwa obat sudah siap sebelum datang ke klinik.'}
+        </section>
+      )}
 
       {cancelled && (
         <section className={`rounded-2xl border p-5 ${order.paymentStatus === 'PAID' ? 'border-amber-200 bg-amber-50' : 'border-red-200 bg-red-50'}`}>
