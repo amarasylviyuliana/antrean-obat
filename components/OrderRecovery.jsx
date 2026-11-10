@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getSavedOrders, removeSavedOrder } from '@/lib/saved-orders';
+import { getSavedOrders } from '@/lib/saved-orders';
 
 export default function OrderRecovery() {
   const [open, setOpen] = useState(false);
@@ -16,9 +16,11 @@ export default function OrderRecovery() {
   useEffect(() => {
     const refreshSavedOrders = () => setSavedOrders(getSavedOrders());
     refreshSavedOrders();
+    const expiryTimer = setInterval(refreshSavedOrders, 60 * 1000);
     window.addEventListener('storage', refreshSavedOrders);
     window.addEventListener('antreobat:saved-orders', refreshSavedOrders);
     return () => {
+      clearInterval(expiryTimer);
       window.removeEventListener('storage', refreshSavedOrders);
       window.removeEventListener('antreobat:saved-orders', refreshSavedOrders);
     };
@@ -50,7 +52,7 @@ export default function OrderRecovery() {
       {savedOrders.length > 0 && (
         <div>
           <h2 className="font-bold text-slate-900">Pesanan tersimpan di perangkat ini</h2>
-          <p className="mt-1 text-sm text-slate-500">Buka kembali status pesanan dari browser ini.</p>
+          <p className="mt-1 text-sm text-slate-500">Bisa dibuka kembali dari browser ini dan terhapus otomatis setelah 24 jam.</p>
           <ul className="mt-3 divide-y divide-slate-100">
             {savedOrders.map((order) => (
               <li key={order.orderCode} className="flex flex-wrap items-center justify-between gap-3 py-3">
@@ -64,14 +66,6 @@ export default function OrderRecovery() {
                 </div>
                 <div className="flex items-center gap-2">
                   <Link className="btn-ghost px-3 py-1.5 text-sm" href={`/lacak/${order.orderCode}`}>Lihat status</Link>
-                  <button
-                    type="button"
-                    className="text-xs text-slate-500 underline hover:text-red-700"
-                    onClick={() => removeSavedOrder(order.orderCode)}
-                    aria-label={`Hapus ${order.orderCode} dari daftar perangkat`}
-                  >
-                    Hapus
-                  </button>
                 </div>
               </li>
             ))}
