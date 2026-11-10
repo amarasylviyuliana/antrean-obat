@@ -9,6 +9,7 @@ import { flowFor, STATUS_LABEL } from '@/lib/constants';
 import { formatDateTime, parseDateTime } from '@/lib/format';
 import { deliveryEta, estimatedDeliveryMinutes, rupiah } from '@/lib/geo';
 import { CLINIC_WHATSAPP, CLINIC_WHATSAPP_DISPLAY } from '@/lib/contact';
+import { saveOrder } from '@/lib/saved-orders';
 
 const CourierMap = dynamic(() => import('@/components/CourierMap'), {
   ssr: false,
@@ -24,6 +25,8 @@ export default function LacakDetail({ params }) {
   const [confirmError, setConfirmError] = useState('');
   const [confirming, setConfirming] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const [copyMessage, setCopyMessage] = useState('');
+  const [savedLocally, setSavedLocally] = useState(true);
 
   useEffect(() => {
     const timer = setInterval(() => setNow(Date.now()), 1000);
@@ -38,6 +41,7 @@ export default function LacakDetail({ params }) {
         const data = await res.json();
         if (!res.ok) throw new Error(data.error || 'Gagal memuat pesanan.');
         setOrder(data.order);
+        setSavedLocally(saveOrder(data.order));
         setError('');
       } catch (e) {
         setError(e.message);
@@ -82,6 +86,16 @@ export default function LacakDetail({ params }) {
     }
   }
 
+  async function copyOrderCode() {
+    try {
+      await navigator.clipboard.writeText(order.orderCode);
+      setCopyMessage('Kode pesanan berhasil disalin.');
+    } catch (copyError) {
+      console.error('[LacakDetail] Gagal menyalin kode pesanan:', copyError);
+      setCopyMessage('Kode tidak dapat disalin. Tekan lama kode pesanan untuk menyalinnya.');
+    }
+  }
+
   if (error)
     return (
       <div className="surface-card p-6 text-center">
@@ -112,9 +126,20 @@ export default function LacakDetail({ params }) {
       <SnapScript />
       <section className="surface-card p-5 sm:p-6">
         <div className="flex flex-wrap items-start justify-between gap-2">
-          <div>
+          <div className="min-w-0">
             <p className="text-xs text-slate-500">Kode pesanan</p>
-            <h1 className="text-2xl font-bold tracking-wide text-teal-700">{order.orderCode}</h1>
+            <div className="flex flex-wrap items-center gap-2">
+              <h1 className="text-2xl font-bold tracking-wide text-teal-700">{order.orderCode}</h1>
+              <button type="button" className="btn-ghost px-3 py-1.5 text-xs" onClick={copyOrderCode}>
+                Salin kode
+              </button>
+            </div>
+            {copyMessage && <p role="status" className="mt-1 text-xs text-teal-700">{copyMessage}</p>}
+            <p className="mt-1 text-xs text-slate-500">
+              {savedLocally
+                ? 'Pesanan ini tersimpan di browser pada perangkat ini.'
+                : 'Browser tidak dapat menyimpan pesanan ini. Salin kode atau simpan tautan pelacakan.'}
+            </p>
           </div>
           <StatusBadge status={order.status} />
         </div>

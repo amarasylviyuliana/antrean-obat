@@ -1,14 +1,28 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
+import Link from 'next/link';
+import { getSavedOrders, removeSavedOrder } from '@/lib/saved-orders';
 
 export default function OrderRecovery() {
   const [open, setOpen] = useState(false);
+  const [savedOrders, setSavedOrders] = useState([]);
   const [queueNumber, setQueueNumber] = useState('');
   const [email, setEmail] = useState('');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [sent, setSent] = useState(false);
+
+  useEffect(() => {
+    const refreshSavedOrders = () => setSavedOrders(getSavedOrders());
+    refreshSavedOrders();
+    window.addEventListener('storage', refreshSavedOrders);
+    window.addEventListener('antreobat:saved-orders', refreshSavedOrders);
+    return () => {
+      window.removeEventListener('storage', refreshSavedOrders);
+      window.removeEventListener('antreobat:saved-orders', refreshSavedOrders);
+    };
+  }, []);
 
   async function submit(event) {
     event.preventDefault();
@@ -32,7 +46,38 @@ export default function OrderRecovery() {
   }
 
   return (
-    <section className="surface-card mx-auto w-full max-w-4xl p-5 sm:p-6">
+    <section className="surface-card mx-auto w-full max-w-4xl space-y-5 p-5 sm:p-6">
+      {savedOrders.length > 0 && (
+        <div>
+          <h2 className="font-bold text-slate-900">Pesanan tersimpan di perangkat ini</h2>
+          <p className="mt-1 text-sm text-slate-500">Buka kembali status pesanan dari browser ini.</p>
+          <ul className="mt-3 divide-y divide-slate-100">
+            {savedOrders.map((order) => (
+              <li key={order.orderCode} className="flex flex-wrap items-center justify-between gap-3 py-3">
+                <div className="text-sm">
+                  <p className="font-semibold text-slate-800">{order.queueNumber || 'Pesanan'} · {order.orderCode}</p>
+                  {order.createdAt && (
+                    <p className="mt-0.5 text-xs text-slate-500">
+                      {new Date(order.createdAt.replace(' ', 'T')).toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' })}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <Link className="btn-ghost px-3 py-1.5 text-sm" href={`/lacak/${order.orderCode}`}>Lihat status</Link>
+                  <button
+                    type="button"
+                    className="text-xs text-slate-500 underline hover:text-red-700"
+                    onClick={() => removeSavedOrder(order.orderCode)}
+                    aria-label={`Hapus ${order.orderCode} dari daftar perangkat`}
+                  >
+                    Hapus
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="font-bold text-slate-900">Sudah pernah membuat pesanan?</h2>

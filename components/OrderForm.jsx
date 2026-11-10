@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import AreaSearch from './AreaSearch';
 import SnapScript, { payOrder, syncPayment } from './Snap';
 import { CLINIC, calcShipping, isPointInPolygon, rupiah, OUT_OF_RANGE_MSG, BASE_FEE, BASE_KM, PER_KM, MAX_KM } from '@/lib/geo';
+import { saveOrder } from '@/lib/saved-orders';
 
 const MapPicker = dynamic(() => import('./MapPicker'), {
   ssr: false,
@@ -165,6 +166,7 @@ export default function OrderForm() {
       if (!res.ok) throw new Error(data.error || 'Gagal membuat pesanan.');
 
       const code = data.order.orderCode;
+      saveOrder(data.order);
       if (method === 'DELIVERY') {
         try {
           const result = await payOrder(code);
