@@ -7,6 +7,7 @@ import AreaSearch from './AreaSearch';
 import SnapScript, { payOrder, syncPayment } from './Snap';
 import { CLINIC, calcShipping, isPointInPolygon, rupiah, OUT_OF_RANGE_MSG, BASE_FEE, BASE_KM, PER_KM, MAX_KM } from '@/lib/geo';
 import { saveOrder } from '@/lib/saved-orders';
+import { normalizeQueueNumber } from '@/lib/queue-number';
 
 const MapPicker = dynamic(() => import('./MapPicker'), {
   ssr: false,
@@ -148,7 +149,7 @@ export default function OrderForm() {
     try {
       const body = {
         ...form,
-        queueNumber: `${form.numberType === 'RM' ? 'RM' : 'A'}-${form.numberDigits}`,
+        queueNumber: normalizeQueueNumber(`${form.numberType === 'RM' ? 'RM' : 'A'}-${form.numberDigits}`),
         method,
         kota: city,
         kecamatan: area?.kecamatan,
@@ -223,6 +224,11 @@ export default function OrderForm() {
                     maxLength={form.numberType === 'RM' ? 10 : 3}
                     value={form.numberDigits}
                     onChange={(e) => setNumberDigits(e.target.value)}
+                    onBlur={() => {
+                      if (form.numberType === 'ANTREAN' && form.numberDigits) {
+                        setForm((current) => ({ ...current, numberDigits: current.numberDigits.padStart(3, '0') }));
+                      }
+                    }}
                     placeholder={form.numberType === 'RM' ? '004521' : '023'}
                   />
                 </div>

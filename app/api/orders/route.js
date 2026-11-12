@@ -4,6 +4,7 @@ import { formatDateTime } from '@/lib/format';
 import { AREAS_BY_CITY, calcShipping, isPointInPolygon, OUT_OF_RANGE_MSG } from '@/lib/geo';
 import { getAreaBoundary } from '@/lib/area-boundaries';
 import { generateOrderCode, findByCode, publicOrder } from '@/lib/orders';
+import { normalizeQueueNumber } from '@/lib/queue-number';
 import { PAYMENT_WINDOW_MINUTES } from '@/lib/payments';
 import { sendOrderEmail } from '@/lib/mailer';
 import { EmailValidationError, validateEmailAddress } from '@/lib/email-validation';
@@ -15,13 +16,14 @@ const clean = (v, max) => String(v ?? '').trim().slice(0, max);
 export async function POST(req) {
   try {
     const b = await req.json();
-    const queueNumber = clean(b.queueNumber, 40);
+    const submittedQueueNumber = clean(b.queueNumber, 40);
+    const queueNumber = normalizeQueueNumber(submittedQueueNumber);
     const patientName = clean(b.patientName, 120);
     const phone = clean(b.phone, 25);
     let email = clean(b.email, 151);
     const method = b.method;
 
-    if (!/^(A-\d{1,3}|RM-\d{1,10})$/.test(queueNumber)) {
+    if (!/^(A-\d{3}|RM-\d{1,10})$/.test(queueNumber)) {
       return err('Masukkan nomor antrean (A- dan 1–3 angka) atau nomor RM (RM- dan 1–10 angka) sesuai kertas resep.');
     }
     if (!patientName) return err('Nama pasien wajib diisi.');

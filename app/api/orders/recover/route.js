@@ -2,14 +2,16 @@ import { NextResponse } from 'next/server';
 import { query } from '@/lib/db';
 import { sendOrderEmail } from '@/lib/mailer';
 import { EmailValidationError, validateEmailAddress } from '@/lib/email-validation';
+import { normalizeQueueNumber } from '@/lib/queue-number';
 
 export const dynamic = 'force-dynamic';
 
 export async function POST(req) {
   try {
     const body = await req.json();
-    const queueNumber = String(body?.queueNumber || '').trim().toUpperCase();
-    if (!/^(A-\d{1,3}|RM-\d{1,10})$/.test(queueNumber)) {
+    const submittedQueueNumber = String(body?.queueNumber || '').trim().toUpperCase();
+    const queueNumber = normalizeQueueNumber(submittedQueueNumber);
+    if (!/^(A-\d{3}|RM-\d{1,10})$/.test(queueNumber)) {
       return NextResponse.json(
         { error: 'Masukkan nomor antrean (contoh A-023) atau nomor RM (contoh RM-12345).' },
         { status: 400 }
@@ -28,11 +30,11 @@ export async function POST(req) {
 
     const orders = await query(
       `SELECT * FROM prescriptions
-       WHERE queue_number = ? AND LOWER(email) = ?
+       WHERE queue_number IN (?, ?) AND LOWER(email) = ?
          AND created_at >= CURDATE()
          AND created_at < DATE_ADD(CURDATE(), INTERVAL 1 DAY)
        ORDER BY created_at DESC`,
-      [queueNumber, email]
+      [queueNumber, submittedQueueNumber, email]
     );
 
     for (const order of orders) {
