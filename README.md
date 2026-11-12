@@ -28,13 +28,13 @@ Layanan obat mandiri (ambil nanti / diantar) untuk klinik. Next.js 14 + Tailwind
 - Ambil sendiri: `MENUNGGU_VERIFIKASI` > `DIPROSES_DIRACIK` > `SIAP_DIAMBIL` > `SELESAI`
 - Diantar: `MENUNGGU_VERIFIKASI` > `DIPROSES_DIRACIK` > `DISERAHKAN_KURIR` > `SELESAI`
 - Untuk ambil sendiri, pasien menerima email saat obat berstatus `SIAP_DIAMBIL`; pasien diminta datang setelah menerima pemberitahuan tersebut.
-- Pesanan antar hanya bisa diproses setelah ongkir lunas. Pesanan yang belum diserahkan ke kurir dapat dibatalkan petugas; pesanan yang sudah dalam pengantaran tidak dapat dibatalkan dari dashboard.
+- Pesanan antar hanya dapat mulai diproses setelah ongkir lunas. Jika belum dibayar setelah 30 menit, pesanan otomatis dibatalkan. Di dashboard petugas, label status dan tombol untuk `DIPROSES_DIRACIK` pada pesanan antar tertulis “Proses”. Pesanan yang belum diserahkan ke kurir dapat dibatalkan petugas; pesanan yang sudah dalam pengantaran tidak dapat dibatalkan dari dashboard.
 - Saat pesanan dibatalkan, tautan pembayaran dinonaktifkan dan batas bayar tidak lagi ditampilkan. Pasien diarahkan menghubungi apotek melalui WhatsApp; bila pembayaran sudah diterima, halaman lacak meminta pasien menghubungi apotek untuk informasi pengembalian dana.
 - Petugas wajib mengisi alasan saat membatalkan pesanan. Alasan tampil di halaman lacak dan email pasien. Pasien dapat menghubungi apotek melalui WhatsApp `0895 4002 000203`.
 - Tugas kurir baru tersedia setelah petugas menyerahkan pesanan dan ongkir lunas. Di `/kurir`, kurir dapat mengklaim tugas sebanyak yang diperlukan tanpa batas jumlah; satu pesanan hanya dapat diklaim oleh satu browser. Tautan rute gabungan tersedia untuk pesanan yang sudah diklaim. Klaim dikenali melalui cookie browser, bukan akun/nama kurir, jadi perangkat yang berbeda diperlukan agar tugas setiap kurir tetap terpisah. Link `/kurir` tidak meminta login.
 - Setelah estimasi pengantaran tercapai, kurir menyelesaikan pesanan dari halaman `/kurir`; pesanan yang dikonfirmasi selesai oleh pasien juga otomatis berpindah ke bagian Selesai di halaman kurir. Riwayat Selesai hanya menampilkan pesanan 24 jam terakhir, sementara semua data pesanan tetap tersimpan di database. Tombol penyelesaian pesanan antar tidak ditampilkan di dashboard petugas.
 - Dashboard petugas menampilkan pesanan Selesai 24 jam terakhir pada daftar dan hitungan tab. Pesanan yang lebih lama tetap tersimpan di database dan dapat ditemukan dengan pencarian kode, antrean/RM, nama pasien, atau nomor HP.
-- Pembayaran pesanan antar berlaku 30 menit sejak pesanan dibuat. Setelah scheduler localhost dipasang, sistem mengirim pengingat email 15 menit sebelum tenggat dan membatalkan pesanan otomatis setelah Midtrans memastikan pembayaran kedaluwarsa. Email wajib untuk pesanan antar.
+- Pembayaran pesanan antar berlaku 30 menit sejak pesanan dibuat. Sistem mengirim pengingat email 15 menit sebelum tenggat dan membatalkan pesanan otomatis setelah Midtrans memastikan transaksi belum dibayar. Di localhost, pasang scheduler agar pemeriksaan tetap berjalan saat dashboard petugas tidak dibuka. Email wajib untuk pesanan antar.
 - Email yang diisi diperiksa formatnya dan domainnya melalui DNS (record MX, atau alamat domain sebagai fallback). Gmail tidak diwajibkan; pemeriksaan domain tidak memastikan kotak masuk tertentu benar-benar ada atau dimiliki pasien.
 - Jika lupa kode pesanan, pasien dapat mencari pesanan hari ini di halaman awal menggunakan nomor antrean/RM dan email saat memesan; tautan pelacakan dikirim ke email yang cocok.
 - Pesanan yang berhasil dibuka tersimpan di browser pada perangkat yang sama selama 24 jam, lalu terhapus otomatis dari daftar perangkat.
@@ -64,7 +64,7 @@ Di localhost webhook Midtrans tidak bisa menjangkau komputer Anda, jadi status l
    powershell -ExecutionPolicy Bypass -File .\scripts\register-payment-maintenance.ps1
    ```
    Tugas berjalan saat akun Windows Anda login dan aplikasi Next.js aktif di `localhost:3000`.
-5. Pengingat dikirim sekitar 15 menit sebelum tenggat. Setelah 30 menit, sistem memeriksa status transaksi Midtrans; pesanan dibatalkan dan email pembatalan dikirim setelah Midtrans memastikan transaksi belum dibayar/kedaluwarsa.
+5. Pengingat dikirim sekitar 15 menit sebelum tenggat. Setelah 30 menit, sistem membatalkan transaksi yang belum dibayar melalui Midtrans, lalu membatalkan pesanan dan mengirim email pembatalan. Dashboard petugas juga memeriksa batas pembayaran setiap 30 detik selama halaman terbuka.
 
 Endpoint terautentikasi untuk scheduler: `POST /api/cron/payments`. Saat aplikasi dipindahkan ke Vercel, jadwalkan endpoint yang sama menggunakan Vercel Cron dan simpan `CRON_SECRET` di Environment Variables Vercel.
 

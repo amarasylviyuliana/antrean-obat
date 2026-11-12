@@ -1,9 +1,9 @@
 import { STATUS_LABEL, STATUS_COLOR, PAY_LABEL, PAY_COLOR } from '@/lib/constants';
 
-export function StatusBadge({ status }) {
+export function StatusBadge({ status, label }) {
   return (
     <span className={`rounded-full px-2.5 py-0.5 text-xs font-semibold ${STATUS_COLOR[status] || 'bg-slate-100'}`}>
-      {STATUS_LABEL[status] || status}
+      {label || STATUS_LABEL[status] || status}
     </span>
   );
 }

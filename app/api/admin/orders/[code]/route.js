@@ -66,9 +66,13 @@ export async function PATCH(req, { params }) {
         );
       }
     }
-    if (order.method === 'DELIVERY' && order.payment_status !== 'PAID' && status !== 'DIBATALKAN' && status !== 'MENUNGGU_VERIFIKASI') {
+    if (
+      order.method === 'DELIVERY' &&
+      order.payment_status !== 'PAID' &&
+      !['DIBATALKAN', 'MENUNGGU_VERIFIKASI'].includes(status)
+    ) {
       return NextResponse.json(
-        { error: 'Ongkir belum lunas. Pesanan antar baru bisa diproses setelah pembayaran berhasil.' },
+        { error: 'Ongkir belum lunas. Pesanan antar belum bisa diserahkan ke kurir.' },
         { status: 400 }
       );
     }

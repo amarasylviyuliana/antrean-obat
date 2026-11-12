@@ -72,6 +72,33 @@ export default function Petugas() {
     return () => clearInterval(t);
   }, [user, load]);
 
+  useEffect(() => {
+    if (!user) return undefined;
+    let active = true;
+    let checking = false;
+    const checkExpiredPayments = async () => {
+      if (checking) return;
+      checking = true;
+      try {
+        const response = await fetch('/api/admin/orders/expire', { method: 'POST' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Gagal memeriksa batas pembayaran.');
+        if (active && data.autoCancelled > 0) await load();
+      } catch (error) {
+        if (active) setErr(error.message || 'Gagal memeriksa batas pembayaran.');
+      } finally {
+        checking = false;
+      }
+    };
+
+    checkExpiredPayments();
+    const timer = setInterval(checkExpiredPayments, 30_000);
+    return () => {
+      active = false;
+      clearInterval(timer);
+    };
+  }, [user, load]);
+
   async function doLogin(e) {
     e.preventDefault();
     setLoginErr('');
@@ -149,7 +176,7 @@ export default function Petugas() {
         {[
           { label: 'Total antrean', count: totalCount, note: 'Pesanan aktif dan terbaru', tone: 'text-slate-900', icon: '▤' },
           { label: 'Menunggu verifikasi', count: counts.MENUNGGU_VERIFIKASI || 0, note: 'Perlu diperiksa', tone: 'text-amber-700', icon: '◷' },
-          { label: 'Sedang diracik', count: counts.DIPROSES_DIRACIK || 0, note: 'Dalam proses farmasi', tone: 'text-sky-700', icon: '⚗' },
+          { label: 'Sedang diproses', count: counts.DIPROSES_DIRACIK || 0, note: 'Dalam proses farmasi', tone: 'text-sky-700', icon: '⚗' },
           { label: 'Siap diambil / diantar', count: readyCount, note: 'Menunggu serah terima', tone: 'text-emerald-700', icon: '✓' },
           { label: 'Selesai · 24 jam', count: counts.SELESAI || 0, note: 'Tuntas diserahkan', tone: 'text-teal-800', icon: '◉' },
         ].map((item) => (
@@ -180,7 +207,7 @@ export default function Petugas() {
               aria-pressed={tab === t}
               className={`rounded-full px-3 py-2 text-xs font-semibold transition ${tab === t ? 'bg-teal-800 text-white shadow-md shadow-teal-900/10' : 'border border-slate-200 bg-white text-slate-600 hover:border-teal-200 hover:bg-teal-50'}`}
             >
-              {t === 'SEMUA' ? 'Semua' : STATUS_LABEL[t]}
+              {t === 'SEMUA' ? 'Semua' : t === 'DIPROSES_DIRACIK' ? 'Proses' : STATUS_LABEL[t]}
               {t !== 'SEMUA' && counts[t] ? ` (${counts[t]})` : ''}
             </button>
           ))}
@@ -288,14 +315,23 @@ export default function Petugas() {
             o.status !== 'SELESAI' &&
             o.status !== 'DIBATALKAN' &&
             !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
-          const showNext = next && !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR');
+          const showNext =
+            next &&
+            !(o.method === 'DELIVERY' && o.status === 'DISERAHKAN_KURIR') &&
+            !(o.method === 'DELIVERY' && o.payment_status !== 'PAID');
+          const nextLabel = o.method === 'DELIVERY' && next === 'DIPROSES_DIRACIK'
+            ? 'Proses'
+            : STATUS_LABEL[next];
+          const statusLabel = o.method === 'DELIVERY' && o.status === 'DIPROSES_DIRACIK'
+            ? 'Proses'
+            : STATUS_LABEL[o.status];
           return (
             <article key={o.order_code} className={`rounded-2xl border border-slate-200 border-l-4 bg-white p-4 shadow-sm shadow-slate-900/[0.03] sm:px-5 sm:py-4 ${STATUS_ACCENT[o.status] || 'border-l-slate-300'}`}>
               <div className="flex flex-wrap items-center gap-2">
                   <span className="text-[11px] font-bold uppercase tracking-wide text-slate-400">Antrean</span>
                   <span className="text-base font-extrabold text-teal-800">{o.queue_number}</span>
                   <span className="rounded-full bg-slate-100 px-2.5 py-1 text-[11px] font-semibold text-slate-600">#{o.order_code}</span>
-                  <StatusBadge status={o.status} />
+                  <StatusBadge status={o.status} label={statusLabel} />
                   {o.method === 'DELIVERY' && (o.status !== 'DIBATALKAN' || o.payment_status === 'PAID') && <PayBadge status={o.payment_status} />}
                   <span className="text-xs text-slate-500">{o.method === 'DELIVERY' ? '🛵 Diantar ke rumah' : '🚶 Diambil di klinik'}</span>
               </div>
@@ -342,7 +378,7 @@ export default function Petugas() {
                       disabled={busyCode === o.order_code}
                       onClick={() => setStatus(o.order_code, next)}
                     >
-                      {STATUS_LABEL[next]}
+                      {nextLabel}
                     </button>
                   )}
                   {canCancel && (

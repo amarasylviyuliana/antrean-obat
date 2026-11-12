@@ -4,8 +4,9 @@ import { query } from '@/lib/db';
 import { findByCode } from '@/lib/orders';
 import { getTransactionStatus, applyPaymentStatus } from '@/lib/midtrans';
 import { formatDateTime } from '@/lib/format';
-import { PAYMENT_REMINDER_MINUTES, PAYMENT_WINDOW_MINUTES } from '@/lib/payments';
+import { PAYMENT_REMINDER_MINUTES } from '@/lib/payments';
 import { sendOrderEmail } from '@/lib/mailer';
+import { expireUnpaidDeliveryOrders } from '@/lib/expire-unpaid-orders';
 
 export const dynamic = 'force-dynamic';
 
@@ -55,12 +56,9 @@ export async function POST(req) {
 
   try {
     let remindersSent = 0;
-    let autoCancelled = 0;
-    let cancellationEmailsSent = 0;
-
     const reminders = await query(
       `SELECT * FROM prescriptions
-       WHERE method = 'DELIVERY' AND status = 'MENUNGGU_VERIFIKASI'
+       WHERE method = 'DELIVERY' AND status IN ('MENUNGGU_VERIFIKASI', 'DIPROSES_DIRACIK')
          AND payment_status <> 'PAID' AND email IS NOT NULL
          AND payment_reminder_sent_at IS NULL
          AND payment_expires_at > NOW()
@@ -76,7 +74,11 @@ export async function POST(req) {
         console.error(`[POST /api/cron/payments] Gagal memeriksa pembayaran ${candidate.order_code}:`, e.message);
         continue;
       }
-      if (!order || order.payment_status === 'PAID' || order.status !== 'MENUNGGU_VERIFIKASI') continue;
+      if (
+        !order ||
+        order.payment_status === 'PAID' ||
+        !['MENUNGGU_VERIFIKASI', 'DIPROSES_DIRACIK'].includes(order.status)
+      ) continue;
 
       const sent = await sendClaimedEmail(
         order,
@@ -88,52 +90,7 @@ export async function POST(req) {
       if (sent) remindersSent++;
     }
 
-    const overdue = await query(
-      `SELECT * FROM prescriptions
-       WHERE method = 'DELIVERY' AND status = 'MENUNGGU_VERIFIKASI'
-         AND payment_status <> 'PAID' AND payment_expires_at <= NOW()
-       ORDER BY payment_expires_at ASC LIMIT 100`
-    );
-
-    for (const candidate of overdue) {
-      let order;
-      try {
-        order = await refreshPayment(candidate);
-      } catch (e) {
-        console.error(`[POST /api/cron/payments] Gagal memeriksa pembayaran ${candidate.order_code}:`, e.message);
-        continue;
-      }
-      if (!order || order.payment_status === 'PAID' || order.status !== 'MENUNGGU_VERIFIKASI') continue;
-
-      const result = await query(
-        `UPDATE prescriptions SET status = 'DIBATALKAN', cancellation_reason = 'Pembayaran ongkir tidak diterima sebelum batas waktu.',
-           payment_status = 'EXPIRED',
-           auto_cancelled_at = NOW()
-         WHERE id = ? AND method = 'DELIVERY' AND status = 'MENUNGGU_VERIFIKASI'
-           AND payment_status <> 'PAID' AND payment_expires_at <= NOW()
-           AND (midtrans_order_id IS NULL OR payment_status IN ('EXPIRED', 'FAILED'))`,
-        [order.id]
-      );
-      if (result.affectedRows) autoCancelled++;
-    }
-
-    const cancelledOrders = await query(
-      `SELECT * FROM prescriptions
-       WHERE auto_cancelled_at IS NOT NULL AND payment_cancel_email_sent_at IS NULL
-         AND email IS NOT NULL
-       ORDER BY auto_cancelled_at ASC LIMIT 100`
-    );
-
-    for (const order of cancelledOrders) {
-      const sent = await sendClaimedEmail(
-        order,
-        'payment_cancel_email_sent_at',
-        `Pesanan ${order.order_code} dibatalkan karena belum dibayar`,
-        `Pesanan ini dibatalkan otomatis karena pembayaran tidak diterima dalam batas waktu ${PAYMENT_WINDOW_MINUTES} menit. Tautan pembayaran untuk pesanan ini sudah tidak berlaku. Jika masih memerlukan obat, silakan buat pesanan baru. Untuk informasi, hubungi apotek melalui WhatsApp 0895 4002 000203 dan sebutkan kode pesanan.`,
-        { path: '/', linkLabel: 'Buat pesanan baru' }
-      );
-      if (sent) cancellationEmailsSent++;
-    }
+    const { autoCancelled, cancellationEmailsSent } = await expireUnpaidDeliveryOrders();
 
     return NextResponse.json({ ok: true, remindersSent, autoCancelled, cancellationEmailsSent });
   } catch (e) {
